@@ -50,7 +50,7 @@ export class ChatbotService {
 
                 if(parseInt(order) == lastOrderQuestion.order){
 
-                    let body = await this.questionService.findByOrderAndLanguage(2, language._id)    
+                    let body = await this.questionService.findByOrderAndLanguage(2, user[0].languageId)    
                 
                     await this.askedQuestionService.store(user[0]._id, body[0])
                     
