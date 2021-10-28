@@ -17,6 +17,8 @@ export class User {
     @Prop({type: mongoose.Schema.Types.ObjectId, ref:'Language'})
     languageId: Language
 
+    order: string
+
     @Prop({ required: true })
     createdAt: Date;
 
@@ -28,4 +30,4 @@ export class User {
 
 }
 
-export const LanguageSchema = SchemaFactory.createForClass(Language);
+export const UserSchema = SchemaFactory.createForClass(User);

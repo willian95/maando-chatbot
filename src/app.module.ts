@@ -8,6 +8,8 @@ import { LanguageModule } from './language/language.module';
 import { QuestionModule } from './question/question.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
 import { TwilioModule } from 'nestjs-twilio';
+import { AskedQuestionModule } from './asked-question/asked-question.module';
+import { UserModule } from './user/user.module';
 
 
 @Module({
@@ -22,6 +24,8 @@ import { TwilioModule } from 'nestjs-twilio';
     LanguageModule,
     QuestionModule,
     ChatbotModule,
+    AskedQuestionModule,
+    UserModule,
   
   ],
   controllers: [AppController],

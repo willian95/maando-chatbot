@@ -17,6 +17,12 @@ export class Question {
     @Prop({type: mongoose.Schema.Types.ObjectId, ref:'Language'})
     languageId: Language
 
+    @Prop()
+    order: Number
+
+    @Prop()
+    needReply: Boolean
+
     @Prop({ required: true })
     createdAt: Date;
 

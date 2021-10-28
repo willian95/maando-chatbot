@@ -9,9 +9,10 @@ export class LanguageService {
     constructor(@InjectModel(Language.name) private readonly model: Model<LanguageDocument>) {}
 
     async store(language){
-
+        
         await new this.model({
-            language:language,
+            language:language.language,
+            order:language.order,
             createdAt: new Date(),
             updatedAt: new Date(),
         }).save();
@@ -21,7 +22,29 @@ export class LanguageService {
     async findByLanguage(language){
         
         let result = await this.model.findOne({
+            language: language.language,
+            deletedAt:null
+        });
+
+        return result
+
+    }
+
+    async findByLanguageSeeder(language){
+        
+        let result = await this.model.findOne({
             language: language,
+            deletedAt:null
+        });
+
+        return result
+
+    }
+
+    async findByOrder(order){
+        
+        let result = await this.model.findOne({
+            order: order,
             deletedAt:null
         });
 

@@ -11,6 +11,9 @@ export class Language {
     @Prop()
     language: string;
 
+    @Prop()
+    order: Number
+
     @Prop({ required: true })
     createdAt: Date;
 

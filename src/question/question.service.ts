@@ -13,10 +13,26 @@ export class QuestionService {
         await new this.model({
             question:question.question,
             languageId: question.language._id,
+            order:question.order,
+            needReply:question.needReply,
             createdAt: new Date(),
             updatedAt: new Date(),
         }).save();
 
+    }
+
+    async findByOrderAndLanguage(order, languageId){
+
+        return await this.model.find({
+            order:order,
+            languageId: languageId,
+            deletedAt:null
+        })
+
+    }
+
+    async getLastOrderQuestion(){
+        return await this.model.findOne().sort({ order: -1 });
     }
 
 }
