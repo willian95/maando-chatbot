@@ -327,7 +327,7 @@ export class ChatbotService {
                         }
 
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
-                        await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, openOrder ? openOrder._id : null)
+                        await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body.toLowerCase(), openOrder ? openOrder._id : null)
                         await this.showQuestion(14, messageBody)
 
                     }
@@ -733,7 +733,7 @@ export class ChatbotService {
 
     async validateEmail(email){
 
-        if(/^[a-z0-9][a-z0-9-_\.]+@([a-z]|[a-z0-9]?[a-z0-9-]+[a-z0-9])\.[a-z0-9]{2,10}(?:\.[a-z]{2,10})?$/.test(email)){
+        if(/^[a-z0-9][a-z0-9-_\.]+@([a-z]|[a-z0-9]?[a-z0-9-]+[a-z0-9])\.[a-z0-9]{2,10}(?:\.[a-z]{2,10})?$/.test(email.toLowerCase())){
             return true
         }
 
