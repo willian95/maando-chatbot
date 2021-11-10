@@ -487,7 +487,8 @@ export class ChatbotService {
         let storedUser = await this.userService.store(messageBody.From, language._id)
                 
         let body = await this.questionService.findByOrderAndLanguage(1, language._id)
-        console.log(body[0])
+        console.log(body)
+        console.log(language)
         await this.askedQuestionService.store(storedUser._id, body[0], null)
         
         await this.sendMessage(this.textTransformation(body[0].question), messageBody.From)
