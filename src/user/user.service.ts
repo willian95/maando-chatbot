@@ -13,7 +13,7 @@ export class UserService {
         return await this.model.find({
             phoneNumber: phoneNumber,
             deletedAt: null
-        })
+        }).populate("languageId")
 
     }
 

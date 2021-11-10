@@ -19,4 +19,20 @@ export class SeederController {
 
   }
 
+  @Get("error-message")
+  async errorMessageSeed(){
+
+    await this.seederService.seedErrorMessages()
+
+  }
+
+  @Get("success-message")
+  async successMessageSeed(){
+
+    await this.seederService.seedSuccessMessages()
+
+  }
+
+  
+
 }

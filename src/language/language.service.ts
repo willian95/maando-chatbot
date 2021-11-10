@@ -52,4 +52,25 @@ export class LanguageService {
 
     }
 
+    async findById(id){
+        
+        let result = await this.model.findOne({
+            _id: id,
+            deletedAt:null
+        });
+
+        return result
+
+    }
+
+    async countAllLanguages(){
+        
+        let result = await this.model.count({
+            deletedAt:null
+        });
+
+        return result
+
+    }
+
 }

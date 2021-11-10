@@ -8,6 +8,9 @@ export type UserDocument = User & Document;
 
 @Schema()
 export class User {
+    question(question: any, From: any) {
+        throw new Error('Method not implemented.');
+    }
 
     _id: Number
 

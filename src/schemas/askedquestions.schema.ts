@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { User } from './users.schema';
 import { Question } from './questions.schema';
+import { Order } from './order.schema';
 
 import * as mongoose from 'mongoose';
 
@@ -16,7 +17,10 @@ export class AskedQuestions {
     userId: User
 
     @Prop({type: mongoose.Schema.Types.ObjectId, ref:'Question'})
-    questionId: User
+    questionId: Question
+
+    @Prop({type: mongoose.Schema.Types.ObjectId, ref:'Order', nullable:true})
+    orderId: Order
 
     @Prop()
     reply?: String;

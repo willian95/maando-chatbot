@@ -8,12 +8,13 @@ export class AskedQuestionService {
 
     constructor(@InjectModel(AskedQuestions.name) private readonly model: Model<AskedQuestionsDocument>) {}
 
-    async store(userId, questionId){
+    async store(userId, questionId, orderId){
 
         return await new this.model({
             questionId:questionId._id,
             userId:userId,
             reply:null,
+            orderId:orderId,
             needReply: questionId.needReply,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -21,28 +22,36 @@ export class AskedQuestionService {
 
     }
 
-    async userHaveOpenQuestion(userId){
+    async userHaveOpenQuestion(userId, orderId){
         
         return await this.model.findOne({
             userId:userId,
+            orderId:orderId,
             needReply:true,
             reply:null
         }).populate("questionId");
 
     }
 
-    async updateOpenQuestionWithReply(questionId, reply){
+    async updateOpenQuestionWithReply(questionId, reply, orderId){
 
-        let question = await this.model.findOne({_id: questionId})
+        let question = await this.model.findOne({_id: questionId, orderId: orderId})
         question.reply = reply
         question.updatedAt = new Date()
         return await question.save()
 
     }
 
-    async getLastQuestionAsked(userId){
+    async getLastQuestionAsked(userId, orderId){
 
-        return await this.model.findOne({userId: userId}).sort({ _id: -1 }).populate("questionId");
+        return await this.model.findOne({userId: userId, orderId:orderId}).sort({ _id: -1 }).populate("questionId");
+
+    }
+
+    async getQuestionAsked(userId, questionId, orderId){
+
+
+        return await this.model.findOne({userId: userId, orderId:orderId, questionId: questionId}).sort({ _id: -1 }).populate("questionId");
 
     }
 

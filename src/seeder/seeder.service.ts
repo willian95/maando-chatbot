@@ -3,11 +3,18 @@ import { Language, LanguageDocument } from '../schemas/languages.schema';
 
 import { LanguageService } from '../language/language.service';
 import { QuestionService } from '../question/question.service';
+import { ErrorMessageService } from '../error-message/error-message.service';
+import { SuccessMessageService } from '../success-message/success-message.service';
 
 @Injectable()
 export class SeederService {
 
-    constructor(private readonly languageService:LanguageService, private readonly questionService:QuestionService) {}
+    constructor(
+        private readonly languageService:LanguageService, 
+        private readonly questionService:QuestionService, 
+        private readonly errorMessageService:ErrorMessageService,
+        private readonly successMessageService:SuccessMessageService
+    ) {}
 
     async seedLanguage() {
 
@@ -84,6 +91,60 @@ export class SeederService {
         for(let i = 0; i < questions.length; i++){
             console.log(questions[i])
             await this.questionService.store(questions[i])
+
+        }
+       
+       
+    }
+
+    async seedErrorMessages() {
+
+        let errorMessages = [
+            {
+                "message": "Respuesta no es correcta. Debes enviar un número",
+                "languageOrder": 1,
+                "order":1,
+                "needReply":true
+            },
+            {
+                "message": "Your answer is not right. You have to send a number",
+                "languageOrder": 2,
+                "order":1,
+                "needReply":true
+            },
+            
+        ]
+
+        for(let i = 0; i < errorMessages.length; i++){
+            
+            await this.errorMessageService.store(errorMessages[i])
+
+        }
+       
+       
+    }
+
+    async seedSuccessMessages() {
+
+        let successMessages = [
+            {
+                "message": "Solicitud de envío de paquete realizada exitosamente",
+                "languageOrder": 1,
+                "order":1,
+                "needReply":true
+            },
+            {
+                "message": "Shipping request done succesfully",
+                "languageOrder": 2,
+                "order":1,
+                "needReply":true
+            },
+            
+        ]
+
+        for(let i = 0; i < successMessages.length; i++){
+            
+            await this.successMessageService.store(successMessages[i])
 
         }
        

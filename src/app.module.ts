@@ -10,6 +10,9 @@ import { ChatbotModule } from './chatbot/chatbot.module';
 import { TwilioModule } from 'nestjs-twilio';
 import { AskedQuestionModule } from './asked-question/asked-question.module';
 import { UserModule } from './user/user.module';
+import { ErrorMessageModule } from './error-message/error-message.module';
+import { OrderModule } from './order/order.module';
+import { SuccessMessageModule } from './success-message/success-message.module';
 
 
 @Module({
@@ -26,6 +29,9 @@ import { UserModule } from './user/user.module';
     ChatbotModule,
     AskedQuestionModule,
     UserModule,
+    ErrorMessageModule,
+    OrderModule,
+    SuccessMessageModule,
   
   ],
   controllers: [AppController],
