@@ -23,8 +23,8 @@ export class ChatbotService {
         private httpService:HttpService
     ) {}
 
-    async message(messageBody) {
-      
+    async message(messageBody, phoneNumber) {
+
         try {
 
             let user = await this.userService.findUserByPhone(messageBody.From)
@@ -32,7 +32,7 @@ export class ChatbotService {
             
             if(user.length == 0){
   
-                this.askForLanguage(messageBody, language);
+                this.askForLanguage(messageBody, language, phoneNumber);
 
             }else{
                 
@@ -50,20 +50,20 @@ export class ChatbotService {
                         if(!isInteger){
                             
                             let message = await this.errorMessageService.findErrorMessage(1, language.order)
-                            await this.sendMessage(message.message, messageBody.From)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
                         }
                         else if(isInteger == 0 || isInteger > countLanguages){
                             let message = await this.errorMessageService.findErrorMessage(2, language.order)
-                            await this.sendMessage(message.message, messageBody.From)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
                         }
                         else{
 
                             await this.updateUserLanguage(openQuestion, messageBody, user)
-                            await this.showQuestion(2, messageBody)
+                            await this.showQuestion(2, messageBody, phoneNumber)
 
                         }
 
@@ -76,14 +76,14 @@ export class ChatbotService {
                         if(!isInteger){
                             
                             let message = await this.errorMessageService.findErrorMessage(1, language.order)
-                            await this.sendMessage(message.message, messageBody.From)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
                         }
                         else if(isInteger == 0 || isInteger > 3){ //cambiar en caso de añadir otra opción al menu
                             let message = await this.errorMessageService.findErrorMessage(2, language.order)
-                            await this.sendMessage(message.message, messageBody.From)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
                         }else{
 
@@ -91,11 +91,11 @@ export class ChatbotService {
                             if(messageBody.Body == "1"){
 
                                 await this.orderService.store(user[0]._id)
-                                await this.showQuestion(3, messageBody)
+                                await this.showQuestion(3, messageBody, phoneNumber)
 
                             }else if(messageBody.Body == "2"){
 
-
+                                await this.showQuestion(18, messageBody,phoneNumber)
 
                             }else if(messageBody.Body == "3"){
 
@@ -112,7 +112,11 @@ export class ChatbotService {
 
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, openOrder ? openOrder._id : null)
-                        await this.showQuestion(5, messageBody)
+                        
+                        let message = await this.getAvailableCountries()
+                        await this.sendMessage(message, messageBody.From, phoneNumber)
+                        
+                        await this.showQuestion(5, messageBody, phoneNumber)
 
                     }
 
@@ -146,27 +150,41 @@ export class ChatbotService {
                     //país de salida
                     else if(openQuestion.questionId.order == 5){         
                         
-                        if(messageBody.Body.toUpperCase() == "X"){
 
-                            let message = await this.getAvailableCountries()
-                            await this.sendMessage(message, messageBody.From)
+                        let isInteger = await this.validateInteger(messageBody)
+                        if(!isInteger){
+                            
+                            let message = await this.errorMessageService.findErrorMessage(1, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
-
+                        }
+                        else if(isInteger == 0 || isInteger > await this.countAvailableCountries()){ //cambiar en caso de añadir otra opción al menu
+                            let message = await this.errorMessageService.findErrorMessage(2, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                            return
                         }
                         
                         let validation = await this.validateCountry(messageBody.Body)
                         if(validation.success == false){
 
                             let message = await this.errorMessageService.findErrorMessage(10, language.order)
-                            await this.sendMessage(message.message, messageBody.From)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
 
                         }
 
+                        let question = await this.questionService.findByOrderAndLanguage(5, language._id)
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, validation.country, openOrder ? openOrder._id : null)
-                        await this.showQuestion(6, messageBody)
+                        
+                        let message = await this.getAvailableCities(user[0]._id, question[0]._id, openOrder._id)
+                        await this.sendMessage(message, messageBody.From, phoneNumber)
+                        
+                        
+                        await this.showQuestion(6, messageBody, phoneNumber)
 
                     }
 
@@ -175,12 +193,19 @@ export class ChatbotService {
                         let question = await this.questionService.findByOrderAndLanguage(5, language._id)
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
 
-                        if(messageBody.Body.toUpperCase() == "X"){
-
-                            let message = await this.getAvailableCities(user[0]._id, question[0]._id, openOrder._id)
-                            await this.sendMessage(message, messageBody.From)
+                        let isInteger = await this.validateInteger(messageBody)
+                        if(!isInteger){
+                            
+                            let message = await this.errorMessageService.findErrorMessage(1, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
-
+                        }
+                        else if(isInteger == 0 || isInteger > await this.countAvailableCity(user[0]._id, question[0]._id, openOrder._id)){ //cambiar en caso de añadir otra opción al menu
+                            let message = await this.errorMessageService.findErrorMessage(2, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                            return
                         }
 
 
@@ -189,40 +214,58 @@ export class ChatbotService {
                         if(validation.success == false){
 
                             let message = await this.errorMessageService.findErrorMessage(4, language.order)
-                            await this.sendMessage(message.message, messageBody.From)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
 
                         }
                         
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, validation.city, openOrder ? openOrder._id : null)
-                        await this.showQuestion(7, messageBody)
+
+                        let message = await this.getAvailableCountries()
+                        await this.sendMessage(message, messageBody.From, phoneNumber)
+
+                        await this.showQuestion(7, messageBody, phoneNumber)
 
                     }
 
                     else if(openQuestion.questionId.order == 7){       
-                        
-                        if(messageBody.Body.toUpperCase() == "X"){
 
-                            let message = await this.getAvailableCountries()
-                            await this.sendMessage(message, messageBody.From)
+                        let isInteger = await this.validateInteger(messageBody)
+                        if(!isInteger){
+                            
+                            let message = await this.errorMessageService.findErrorMessage(1, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
-
+                        }
+                        else if(isInteger == 0 || isInteger > await this.countAvailableCountries()){ //cambiar en caso de añadir otra opción al menu
+                            let message = await this.errorMessageService.findErrorMessage(2, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                            return
                         }
                         
                         let validation = await this.validateCountry(messageBody.Body)
                         if(validation.success == false){
 
                             let message = await this.errorMessageService.findErrorMessage(4, language.order)
-                            await this.sendMessage(message.message, messageBody.From)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
 
                         }
 
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, validation.country, openOrder ? openOrder._id : null)
-                        await this.showQuestion(8, messageBody)
+
+
+                        let question = await this.questionService.findByOrderAndLanguage(7, language._id)
+                        let openOrderCountry = await this.orderService.findOpenOrder(user[0]._id)
+                        let message = await this.getAvailableCities(user[0]._id, question[0]._id, openOrderCountry._id)
+                        await this.sendMessage(message, messageBody.From, phoneNumber)
+
+                        await this.showQuestion(8, messageBody, phoneNumber)
 
                     }
 
@@ -231,12 +274,19 @@ export class ChatbotService {
                         let question = await this.questionService.findByOrderAndLanguage(7, language._id)
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
 
-                        if(messageBody.Body.toUpperCase() == "X"){
-
-                            let message = await this.getAvailableCities(user[0]._id, question[0]._id, openOrder._id)
-                            await this.sendMessage(message, messageBody.From)
+                        let isInteger = await this.validateInteger(messageBody)
+                        if(!isInteger){
+                            
+                            let message = await this.errorMessageService.findErrorMessage(1, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
-
+                        }
+                        else if(isInteger == 0 || isInteger > await this.countAvailableCity(user[0]._id, question[0]._id, openOrder._id)){ //cambiar en caso de añadir otra opción al menu
+                            let message = await this.errorMessageService.findErrorMessage(2, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                            return
                         }
 
                         let validation = await this.validateCity(messageBody.Body, user[0]._id, question[0]._id, openOrder._id)
@@ -244,14 +294,14 @@ export class ChatbotService {
                         if(validation.success == false){
 
                             let message = await this.errorMessageService.findErrorMessage(4, language.order)
-                            await this.sendMessage(message.message, messageBody.From)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
 
                         }
 
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, validation.city, openOrder ? openOrder._id : null)
-                        await this.showQuestion(9, messageBody)
+                        await this.showQuestion(9, messageBody, phoneNumber)
 
                     }
 
@@ -261,15 +311,15 @@ export class ChatbotService {
                         if(!cityValidation.success){
 
                             let message = await this.errorMessageService.findErrorMessage(cityValidation.order, language.order)
-                            await this.sendMessage(message.message, messageBody.From)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
 
                         }
 
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, openOrder ? openOrder._id : null)
-                        await this.showQuestion(10, messageBody)
+                        await this.showQuestion(10, messageBody, phoneNumber)
 
                     }
                     else if(openQuestion.questionId.order == 10){ 
@@ -278,15 +328,15 @@ export class ChatbotService {
                         if(!cityValidation.success){
 
                             let message = await this.errorMessageService.findErrorMessage(cityValidation.order, language.order)
-                            await this.sendMessage(message.message, messageBody.From)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
 
                         }
 
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, openOrder ? openOrder._id : null)
-                        await this.showQuestion(11, messageBody)
+                        await this.showQuestion(11, messageBody, phoneNumber)
 
                     }
 
@@ -294,24 +344,32 @@ export class ChatbotService {
 
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, openOrder ? openOrder._id : null)
-                        await this.showQuestion(12, messageBody)
+                        await this.showQuestion(12, messageBody, phoneNumber)
 
                     }
 
                     else if(openQuestion.questionId.order == 12){
 
+                        if(!messageBody.MediaContentType0){
+
+                            let message = await this.errorMessageService.findErrorMessage(7, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                            return 
+                        }   
+
                         if(messageBody.MediaContentType0.indexOf("image") <= -1){
 
                             let message = await this.errorMessageService.findErrorMessage(7, language.order)
-                            await this.sendMessage(message.message, messageBody.From)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From)
+                            await this.sendMessage(message.message, messageBody.From,phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
 
                         }
 
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.MediaUrl0, openOrder ? openOrder._id : null)
-                        await this.showQuestion(13, messageBody)
+                        await this.showQuestion(13, messageBody, phoneNumber)
 
                     }
 
@@ -320,15 +378,15 @@ export class ChatbotService {
                         if(!await this.validateEmail(messageBody.Body)){
 
                             let message = await this.errorMessageService.findErrorMessage(8, language.order)
-                            await this.sendMessage(message.message, messageBody.From)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
 
                         }
 
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body.toLowerCase(), openOrder ? openOrder._id : null)
-                        await this.showQuestion(14, messageBody)
+                        await this.showQuestion(14, messageBody, phoneNumber)
 
                     }
 
@@ -337,15 +395,15 @@ export class ChatbotService {
                         if(!await this.validatePhone(messageBody.Body)){
 
                             let message = await this.errorMessageService.findErrorMessage(9, language.order)
-                            await this.sendMessage(message.message, messageBody.From)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
 
                         }
 
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body.split(' ').join(''), openOrder ? openOrder._id : null)
-                        await this.showQuestion(15, messageBody)
+                        await this.showQuestion(15, messageBody, phoneNumber)
 
                     }
 
@@ -354,32 +412,54 @@ export class ChatbotService {
 
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, openOrder ? openOrder._id : null)
-                        await this.showQuestion(16, messageBody)
+
+                        let message = await this.getAvailableCountries()
+                        await this.sendMessage(message, messageBody.From, phoneNumber)
+
+                        await this.showQuestion(16, messageBody, phoneNumber)
 
                     }
 
                     else if(openQuestion.questionId.order == 16){
 
-                        if(messageBody.Body.toUpperCase() == "X"){
 
-                            let message = await this.getAvailableCountries()
-                            await this.sendMessage(message, messageBody.From)
+
+                        let isInteger = await this.validateInteger(messageBody)
+                        if(!isInteger){
+                            
+                            let message = await this.errorMessageService.findErrorMessage(1, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
-
                         }
+                        else if(isInteger == 0 || isInteger > await this.countAvailableCountries()){ //cambiar en caso de añadir otra opción al menu
+                            let message = await this.errorMessageService.findErrorMessage(2, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                            return
+                        }
+
+
                         
                         let validation = await this.validateCountry(messageBody.Body)
                         if(!validation.success){
 
-                            let message = await this.errorMessageService.findErrorMessage(4, language.order)
-                            await this.sendMessage(message.message, messageBody.From)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From)
+                            let message = await this.errorMessageService.findErrorMessage(10, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
 
                         }
 
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, validation.country, openOrder ? openOrder._id : null)
-                        await this.showQuestion(17, messageBody)
+
+                        let question = await this.questionService.findByOrderAndLanguage(16, language._id)
+                        let openOrderCountry = await this.orderService.findOpenOrder(user[0]._id)
+
+                        let message = await this.getAvailableCities(user[0]._id, question[0]._id, openOrderCountry._id)
+                        await this.sendMessage(message, messageBody.From, phoneNumber)
+
+                        await this.showQuestion(17, messageBody, phoneNumber)
 
                     }
 
@@ -388,12 +468,19 @@ export class ChatbotService {
                         let question = await this.questionService.findByOrderAndLanguage(16, language._id)
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
 
-                        if(messageBody.Body.toUpperCase() == "X"){
-
-                            let message = await this.getAvailableCities(user[0]._id, question[0]._id, openOrder._id)
-                            await this.sendMessage(message, messageBody.From)
+                        let isInteger = await this.validateInteger(messageBody)
+                        if(!isInteger){
+                            
+                            let message = await this.errorMessageService.findErrorMessage(1, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
-
+                        }
+                        else if(isInteger == 0 || isInteger > await this.countAvailableCity(user[0]._id, question[0]._id, openOrder._id)){ //cambiar en caso de añadir otra opción al menu
+                            let message = await this.errorMessageService.findErrorMessage(2, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                            return
                         }
 
                         let validation = await this.validateCity(messageBody.Body, user[0]._id, question[0]._id, openOrder._id)
@@ -401,8 +488,8 @@ export class ChatbotService {
                         if(validation.success == false){
 
                             let message = await this.errorMessageService.findErrorMessage(4, language.order)
-                            await this.sendMessage(message.message, messageBody.From)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
                             return
 
                         }
@@ -411,22 +498,42 @@ export class ChatbotService {
                         await this.orderService.update(openOrder._id, "closed");
                         let message = await this.successMessageService.findSuccessMessage(1,  language.order)
      
-                        await this.sendMessage(message.message, messageBody.From)
+                        await this.sendMessage(message.message, messageBody.From, phoneNumber)
                         
-
 
                     }
 
-                    /*else{
-                        await this.showQuestion(2, messageBody)
-                    }*/
+                    else if(openQuestion.questionId.order == 18){
+                        
+                        if(!await this.validateEmail(messageBody.Body)){
+
+                            let message = await this.errorMessageService.findErrorMessage(8, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                            return
+
+                        }
+
+                        await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, null)
+                        let ads = await this.getPackages(messageBody.Body)
+                        if(ads.length == 0){
+
+                            let message = await this.errorMessageService.findErrorMessage(11, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            return
+
+                        }
+
+                    }
+
+                    
 
                     
 
                 }
                 else{
 
-                    await this.showQuestion(2, messageBody)
+                    await this.showQuestion(2, messageBody, phoneNumber)
 
                 }
 
@@ -455,17 +562,42 @@ export class ChatbotService {
 
     }
 
-    async sendMessage(body, to){
+    async sendMessage(body, to, phoneNumber){
         
-        try{
-            await this.client.messages.create({
-                body: body, 
-                from: 'whatsapp:'+process.env.TWILIO_WHATSAPP_PHONE_NUMBER,       
-                to: to
-            });
-        }catch (e) {
-            console.log(e)
+        if(phoneNumber.indexOf("whatsapp") > -1){
+
+            try{
+                await this.client.messages.create({
+                    body: body, 
+                    from: phoneNumber,       
+                    to: to
+                });
+            }catch (e) {
+                console.log(e)
+            }
+
+
+        }else{
+
+            //const MessagingResponse = require('twillio').twiml.MessagingResponse;
+            //const twiml = new MessagingResponse()
+
+            //twiml.message(body)
+            console.log(phoneNumber)
+            try{
+                await this.client.messages.create({
+                    body: body, 
+                    from: phoneNumber,       
+                    to: to
+                });
+            }catch (e) {
+                console.log(e)
+            }
+
+
         }
+
+        
 
     }
 
@@ -482,16 +614,14 @@ export class ChatbotService {
     }
 
 
-    async askForLanguage(messageBody, language){
+    async askForLanguage(messageBody, language, phoneNumber){
         
         let storedUser = await this.userService.store(messageBody.From, language._id)
                 
         let body = await this.questionService.findByOrderAndLanguage(1, language._id)
-        console.log(body)
-        console.log(language)
         await this.askedQuestionService.store(storedUser._id, body[0], null)
         
-        await this.sendMessage(this.textTransformation(body[0].question), messageBody.From)
+        await this.sendMessage(this.textTransformation(body[0].question), messageBody.From, phoneNumber)
 
     }
 
@@ -520,17 +650,15 @@ export class ChatbotService {
 
     }
 
-    async showQuestion(order, messageBody){
+    async showQuestion(order, messageBody, phoneNumber){
         
         let user = await this.userService.findUserByPhone(messageBody.From)
- 
         let body = await this.questionService.findByOrderAndLanguage(order, user[0].languageId._id)
-
         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
         
         await this.askedQuestionService.store(user[0]._id, body[0], openOrder ? openOrder._id : null)
         
-        await this.sendMessage(this.textTransformation(body[0].question), messageBody.From)
+        await this.sendMessage(this.textTransformation(body[0].question), messageBody.From, phoneNumber)
 
     }
 
@@ -550,11 +678,11 @@ export class ChatbotService {
                 cities = countries[i].aiports
                 for(let j = 0; j < cities.length; j++){
 
-                    if(cities[j].city.toUpperCase().replace("Á", "A").replace("É", "E").replace("Í", "I").replace("Ó", "O").replace("Ú", "U") == city.toUpperCase().replace("Á", "A").replace("É", "E").replace("Í", "I").replace("Ó", "O").replace("Ú", "U")){
+                    let index = j + 1
 
+                    if(city == index){
                         found = true
                         foundAt = j
-
                     }
 
                 }
@@ -582,14 +710,14 @@ export class ChatbotService {
         
         for(let i = 0; i < countries.length; i++){
 
-            if(countries[i].name.toUpperCase().replace("Á", "A").replace("É", "E").replace("Í", "I").replace("Ó", "O").replace("Ú", "U") == country.toUpperCase().replace("Á", "A").replace("É", "E").replace("Í", "I").replace("Ó", "O").replace("Ú", "U")){
+            let index = i + 1
 
-                foundAt = i
+            if(country == index){
                 found = true
+                foundAt = i
             }
 
         }
-
         
         if(found == true){
 
@@ -601,6 +729,37 @@ export class ChatbotService {
 
     }
 
+    async countAvailableCountries(){
+
+        let response = await this.httpService.get(process.env.API_URL+"getAiports").toPromise()
+        let countries = response.data.contriesOrigin
+
+        return countries.length
+
+    }
+
+    async countAvailableCity(userId, questionId, openOrderId){
+
+        let askedQuestion = await this.askedQuestionService.getQuestionAsked(userId, questionId, openOrderId)
+        let response = await this.httpService.get(process.env.API_URL+"getAiports").toPromise()
+        let countries = response.data.contriesOrigin
+        let cities = []
+
+        for(let i = 0; i < countries.length; i++){
+
+            if(countries[i].name == askedQuestion.reply){
+
+                cities = countries[i].aiports
+                
+
+            }
+
+        }
+
+        return cities.length
+
+    }
+
     async getAvailableCountries(){
 
         let response = await this.httpService.get(process.env.API_URL+"getAiports").toPromise()
@@ -609,7 +768,9 @@ export class ChatbotService {
         
         for(let i = 0; i < countries.length; i++){
 
-            finalText += countries[i].name+"\n"
+            let index = i + 1
+
+            finalText += index+"-"+countries[i].name+"\n"
 
         }
 
@@ -633,7 +794,9 @@ export class ChatbotService {
                 cities = countries[i].aiports
                 for(let j = 0; j < cities.length; j++){
 
-                    finalText += cities[j].city + "\n"
+                    let index = j + 1
+
+                    finalText += index+"-"+cities[j].city + "\n"
 
                 }
 
@@ -764,6 +927,25 @@ export class ChatbotService {
 
         return isNumber
 
+    }
+
+    async getPackages(email){
+
+        let response = await this.httpService.post(process.env.API_URL+"tw-mysAd", {
+            "email": "twilio@twilio.com",
+            "email_client": email
+        }).toPromise()
+
+        
+        let ads = response.data.adsBD
+
+        if(ads.length > 0){
+            
+        }else{
+
+            return ads
+
+        }
     }
 
 
