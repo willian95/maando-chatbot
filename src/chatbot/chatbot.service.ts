@@ -422,8 +422,7 @@ export class ChatbotService {
 
                     else if(openQuestion.questionId.order == 16){
 
-
-
+                        
                         let isInteger = await this.validateInteger(messageBody)
                         if(!isInteger){
                             
@@ -464,6 +463,7 @@ export class ChatbotService {
                     }
 
                     else if(openQuestion.questionId.order == 17){
+
                         
                         let question = await this.questionService.findByOrderAndLanguage(16, language._id)
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
@@ -494,8 +494,14 @@ export class ChatbotService {
 
                         }
 
-                        await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, openOrder ? openOrder._id : null)
+                        await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, validation.city, openOrder ? openOrder._id : null)
+                        
+                
+                        let payload = await this.createPayload(openOrder, language, user[0])
+                        console.log(payload)
+                        //await this.storeShippingRequest(payload)
                         await this.orderService.update(openOrder._id, "closed");
+
                         let message = await this.successMessageService.findSuccessMessage(1,  language.order)
      
                         await this.sendMessage(message.message, messageBody.From, phoneNumber)
@@ -805,7 +811,6 @@ export class ChatbotService {
         }
 
         return finalText
-        
 
     }
 
@@ -948,6 +953,89 @@ export class ChatbotService {
         }
     }
 
+    async createPayload(openOrder, language, user){
+
+        let packageTitle = await this.getReply(openOrder._id, 3, language.order, user._id)
+        let packageTitleReply = packageTitle.reply
+
+        let departureCountry = await this.getReply(openOrder._id, 5, language.order, user._id)
+        let departureCountryReply = departureCountry.reply
+
+        let departureCity = await this.getReply(openOrder._id, 6, language.order, user._id)
+        let departureCityReply = departureCity.reply
+
+        let destinationCountry = await this.getReply(openOrder._id, 7, language.order, user._id)
+        let destinationCountryReply = destinationCountry.reply
+
+        let destinationCity = await this.getReply(openOrder._id, 8, language.order, user._id)
+        let destinationCityReply = destinationCity.reply
+
+        let departureDate = await this.getReply(openOrder._id, 9, language.order, user._id)
+        let departureDateReply = departureDate.reply
+
+        let destinationDate = await this.getReply(openOrder._id, 10, language.order, user._id)
+        let destinationDateReply = destinationDate.reply
+
+        let deliveryAddress = await this.getReply(openOrder._id, 11, language.order, user._id)
+        let deliveryAddressReply = deliveryAddress.reply
+
+        let packagePicture = await this.getReply(openOrder._id, 12, language.order, user._id)
+        let packagePictureReply = packagePicture.reply
+
+        let clientEmail = await this.getReply(openOrder._id, 13, language.order, user._id)
+        let clientEmailReply = clientEmail.reply
+
+        let clientPhoneNumber = await this.getReply(openOrder._id, 14, language.order, user._id)
+        let clientPhoneNumberReply = clientPhoneNumber.reply
+
+        let clientFullName = await this.getReply(openOrder._id, 15, language.order, user._id)
+        let clientFullNameReply = clientFullName.reply
+
+        let clientCountry = await this.getReply(openOrder._id, 16, language.order, user._id)
+        let clientCountryReply = clientCountry.reply
+
+        let clientCity = await this.getReply(openOrder._id, 17, language.order, user._id)
+        let clientCityReply = clientCity.reply
+
+        let payload = {
+            "email": "twilio@twilio.com",
+            "title": packageTitleReply, // Máximo 12 caracteres
+            "price": "100", // Una cadena con un valor mínimo de 30
+            "cityDeparture": departureCityReply, // Ciudad de salida, debe coincidir con “city” del listado de ciudades,
+            "cityDestination": destinationCityReply, // Ciudad de entrega, debe coincidir con “city” del listado de ciudades,
+            "countryDeparture": destinationCountryReply, // País de entrega, debe coincidir con “name” del listado de paises,
+            "countryDestination": destinationCountryReply, // País de entrega, debe coincidir con “name” del listado de paises,
+            "departureDate": departureDateReply, // fecha de salida del paquete
+            "arrivalDate": destinationDateReply, // fecha de llegada del paquete
+            "delivery": deliveryAddressReply, // Dirección del Lugar de entrega
+            "image": packagePictureReply, // Imagen en formato File
+            "email_client": clientEmailReply, // email del cliente
+            "phone_client": clientPhoneNumberReply, // teléfono celular del cliente
+            "fullName_client": clientFullNameReply, // Nombre completo del cliente
+            "country_client": clientCountryReply, // debe coincidir con “name” del listado de paises,
+            "city_client": clientCityReply
+        }
+
+        return payload
+
+    }
+
+    async getReply(orderId, questionOrder, languageOrder, userId){
+
+        let language = await this.languageService.findByOrder(languageOrder)
+        let question = await this.questionService.findByOrderAndLanguage(questionOrder, language._id)
+
+        let askedQuestion = await this.askedQuestionService.getQuestionAsked(userId, question[0]._id, orderId)
+
+        return askedQuestion
+
+    }
+
+    async storeShippingRequest(payload){
+
+        let response = await this.httpService.post(process.env.API_URL+"tw-createAd", payload).toPromise()
+        console.log(response)
+    }
 
 
 }
