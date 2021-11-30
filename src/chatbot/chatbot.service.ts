@@ -1120,8 +1120,20 @@ export class ChatbotService {
 
         await response.data.pipe(writer);
         
-        let dest2 = dest.replace(".", "").replace(/\//g, '\\');
-        let path = process.env.BASE_PATH+dest2
+        let path = ""
+        let dest2 = ""
+        if(process.env.SYS_OS == "windows"){
+            dest2 = dest.replace(".", "").replace(/\//g, '\\');
+            path = process.env.BASE_PATH+dest2
+        }else{
+            dest2 = dest.replace(".", "")
+            path = process.env.BASE_PATH+dest2
+
+        }
+        
+        console.log(process.env.SYS_OS)
+        console.log(dest2)
+        console.log(path)
 
         const file = await fs.readFileSync(path);
 
