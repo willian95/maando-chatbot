@@ -574,13 +574,14 @@ export class ChatbotService {
 
                             let message = await this.successMessageService.findSuccessMessage(1,  language.order)
                             await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.orderService.update(openOrder._id, "closed");
                         }else{
 
 
 
                         }
              
-                        //await this.orderService.update(openOrder._id, "closed");
+                        //
 
                         //let message = await this.successMessageService.findSuccessMessage(1,  language.order)
      
