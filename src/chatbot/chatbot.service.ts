@@ -7,6 +7,9 @@ import { UserService } from '../user/user.service'
 import { OrderService } from '../order/order.service'
 import { ErrorMessageService } from '../error-message/error-message.service';
 import { SuccessMessageService } from '../success-message/success-message.service';
+import { v4 as uuidv4 } from 'uuid'
+const FormData = require('form-data');
+const fs = require('fs');
 
 @Injectable()
 export class ChatbotService {
@@ -113,39 +116,13 @@ export class ChatbotService {
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, openOrder ? openOrder._id : null)
                         
+                        await this.showQuestion(5, messageBody, phoneNumber)
                         let message = await this.getAvailableCountries()
                         await this.sendMessage(message, messageBody.From, phoneNumber)
                         
-                        await this.showQuestion(5, messageBody, phoneNumber)
+                        
 
                     }
-
-                    //precio
-                    /*else if(openQuestion.questionId.order == 4){
-
-                        let isNumber = await this.validateFloat(messageBody)
-                  
-                        if(!isNumber){
-                            
-                            let message = await this.errorMessageService.findErrorMessage(1, language.order)
-                            await this.sendMessage(message.message, messageBody.From)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From)
-                            return
-                        }
-                        else if(isNumber < 30){
-
-                            let message = await this.errorMessageService.findErrorMessage(3, language.order)
-                            await this.sendMessage(message.message, messageBody.From)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From)
-                            return
-
-                        }
-                        
-                        let openOrder = await this.orderService.findOpenOrder(user[0]._id)
-                        await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, openOrder ? openOrder._id : null)
-                        await this.showQuestion(5, messageBody)
-
-                    }*/
 
                     //país de salida
                     else if(openQuestion.questionId.order == 5){         
@@ -180,11 +157,12 @@ export class ChatbotService {
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, validation.country, openOrder ? openOrder._id : null)
                         
+                        await this.showQuestion(6, messageBody, phoneNumber)
                         let message = await this.getAvailableCities(user[0]._id, question[0]._id, openOrder._id)
                         await this.sendMessage(message, messageBody.From, phoneNumber)
                         
                         
-                        await this.showQuestion(6, messageBody, phoneNumber)
+                        
 
                     }
 
@@ -222,10 +200,12 @@ export class ChatbotService {
                         
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, validation.city, openOrder ? openOrder._id : null)
 
+                        await this.showQuestion(7, messageBody, phoneNumber)
+
                         let message = await this.getAvailableCountries()
                         await this.sendMessage(message, messageBody.From, phoneNumber)
 
-                        await this.showQuestion(7, messageBody, phoneNumber)
+                        
 
                     }
 
@@ -260,12 +240,13 @@ export class ChatbotService {
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, validation.country, openOrder ? openOrder._id : null)
 
 
+                        await this.showQuestion(8, messageBody, phoneNumber)
                         let question = await this.questionService.findByOrderAndLanguage(7, language._id)
                         let openOrderCountry = await this.orderService.findOpenOrder(user[0]._id)
                         let message = await this.getAvailableCities(user[0]._id, question[0]._id, openOrderCountry._id)
                         await this.sendMessage(message, messageBody.From, phoneNumber)
 
-                        await this.showQuestion(8, messageBody, phoneNumber)
+                        
 
                     }
 
@@ -324,6 +305,7 @@ export class ChatbotService {
                     }
                     else if(openQuestion.questionId.order == 10){ 
 
+                        let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         let cityValidation = await this.validateDate(messageBody.Body)
                         if(!cityValidation.success){
 
@@ -334,7 +316,21 @@ export class ChatbotService {
 
                         }
 
-                        let openOrder = await this.orderService.findOpenOrder(user[0]._id)
+
+                        let departureDate = await this.getReply(openOrder._id, 9, language.order, user[0]._id)
+                        let departureDateReply = departureDate.reply
+
+                        let departureDateValidation = await this.validateDateBothDates(departureDateReply, messageBody.Body)
+                        if(!departureDateValidation.success){
+
+                            let message = await this.errorMessageService.findErrorMessage(departureDateValidation.order, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                            return
+
+                        }
+
+                        
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, openOrder ? openOrder._id : null)
                         await this.showQuestion(11, messageBody, phoneNumber)
 
@@ -344,11 +340,52 @@ export class ChatbotService {
 
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, openOrder ? openOrder._id : null)
+
+                        //console.log(openOrder, language, user[0])
+
                         await this.showQuestion(12, messageBody, phoneNumber)
+                        let message = await this.getAddress(openOrder._id, language.order, user[0]._id)
+                        await this.sendMessage(message, messageBody.From, phoneNumber)
+                        
 
                     }
 
-                    else if(openQuestion.questionId.order == 12){
+                    else if(openQuestion.questionId.order == 12){ 
+
+                        let openOrder = await this.orderService.findOpenOrder(user[0]._id)
+                        
+                        let isInteger = await this.validateInteger(messageBody)
+                        if(!isInteger){
+                            
+                            let message = await this.errorMessageService.findErrorMessage(1, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                            return
+                        }
+
+                        else if(isInteger < 0 || isInteger > await this.countAddress(openOrder._id, language.order, user[0]._id)){ //cambiar en caso de añadir otra opción al menu
+                            let message = await this.errorMessageService.findErrorMessage(2, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                            return
+                        }
+
+                        else if(messageBody.Body == 0){
+
+                            await this.deleteAskedQuestion(openOrder._id, 12, language.order, user[0]._id)
+                            await this.deleteAskedQuestion(openOrder._id, 11, language.order, user[0]._id)
+                            await this.showQuestion(11, messageBody, phoneNumber)
+                            return
+                        }
+
+                        let validation = await this.validateAddress(messageBody.Body, openOrder._id, language.order, user[0]._id)
+                        
+                        await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, validation, openOrder ? openOrder._id : null)
+                        await this.showQuestion(13, messageBody, phoneNumber)
+
+                    }
+
+                    else if(openQuestion.questionId.order == 13){
 
                         if(!messageBody.MediaContentType0){
 
@@ -369,11 +406,11 @@ export class ChatbotService {
 
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.MediaUrl0, openOrder ? openOrder._id : null)
-                        await this.showQuestion(13, messageBody, phoneNumber)
+                        await this.showQuestion(14, messageBody, phoneNumber)
 
                     }
 
-                    else if(openQuestion.questionId.order == 13){
+                    else if(openQuestion.questionId.order == 14){
                         
                         if(!await this.validateEmail(messageBody.Body)){
 
@@ -386,11 +423,11 @@ export class ChatbotService {
 
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body.toLowerCase(), openOrder ? openOrder._id : null)
-                        await this.showQuestion(14, messageBody, phoneNumber)
+                        await this.showQuestion(15, messageBody, phoneNumber)
 
                     }
 
-                    else if(openQuestion.questionId.order == 14){
+                    else if(openQuestion.questionId.order == 15){
                         
                         if(!await this.validatePhone(messageBody.Body)){
 
@@ -403,24 +440,25 @@ export class ChatbotService {
 
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body.split(' ').join(''), openOrder ? openOrder._id : null)
-                        await this.showQuestion(15, messageBody, phoneNumber)
-
-                    }
-
-                    else if(openQuestion.questionId.order == 15){
-                        
-
-                        let openOrder = await this.orderService.findOpenOrder(user[0]._id)
-                        await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, openOrder ? openOrder._id : null)
-
-                        let message = await this.getAvailableCountries()
-                        await this.sendMessage(message, messageBody.From, phoneNumber)
-
                         await this.showQuestion(16, messageBody, phoneNumber)
 
                     }
 
                     else if(openQuestion.questionId.order == 16){
+                        
+
+                        let openOrder = await this.orderService.findOpenOrder(user[0]._id)
+                        await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, openOrder ? openOrder._id : null)
+
+                        await this.showQuestion(17, messageBody, phoneNumber)
+                        let message = await this.getAvailableCountries()
+                        await this.sendMessage(message, messageBody.From, phoneNumber)
+
+                        
+
+                    }
+
+                    else if(openQuestion.questionId.order == 17){
 
                         
                         let isInteger = await this.validateInteger(messageBody)
@@ -452,20 +490,21 @@ export class ChatbotService {
 
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, validation.country, openOrder ? openOrder._id : null)
 
-                        let question = await this.questionService.findByOrderAndLanguage(16, language._id)
+                        let question = await this.questionService.findByOrderAndLanguage(17, language._id)
                         let openOrderCountry = await this.orderService.findOpenOrder(user[0]._id)
 
+                        await this.showQuestion(18, messageBody, phoneNumber)
                         let message = await this.getAvailableCities(user[0]._id, question[0]._id, openOrderCountry._id)
                         await this.sendMessage(message, messageBody.From, phoneNumber)
 
-                        await this.showQuestion(17, messageBody, phoneNumber)
+                        
 
                     }
 
-                    else if(openQuestion.questionId.order == 17){
+                    else if(openQuestion.questionId.order == 18){
 
                         
-                        let question = await this.questionService.findByOrderAndLanguage(16, language._id)
+                        let question = await this.questionService.findByOrderAndLanguage(17, language._id)
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
 
                         let isInteger = await this.validateInteger(messageBody)
@@ -495,21 +534,61 @@ export class ChatbotService {
                         }
 
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, validation.city, openOrder ? openOrder._id : null)
-                        
-                
-                        let payload = await this.createPayload(openOrder, language, user[0])
-                        console.log(payload)
-                        //await this.storeShippingRequest(payload)
-                        await this.orderService.update(openOrder._id, "closed");
-
-                        let message = await this.successMessageService.findSuccessMessage(1,  language.order)
-     
-                        await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                        await this.showQuestion(19, messageBody, phoneNumber)
                         
 
                     }
 
-                    else if(openQuestion.questionId.order == 18){
+                    else if(openQuestion.questionId.order == 19){
+
+                        let openOrder = await this.orderService.findOpenOrder(user[0]._id)
+
+                        let isInteger = await this.validateInteger(messageBody)
+                        if(!isInteger){
+                            
+                            let message = await this.errorMessageService.findErrorMessage(1, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                            return
+                        }
+                        else if(isInteger == 0 || isInteger > 2){ //cambiar en caso de añadir otra opción al menu
+                            let message = await this.errorMessageService.findErrorMessage(2, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                            return
+                        }
+
+                        let selection = ""
+                        if(messageBody.Body == "1"){
+                            selection = "paypal"
+                        }
+                        else if(messageBody.Body == "2"){
+                            selection = "stripe"
+                        }
+
+                        await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, selection, openOrder ? openOrder._id : null)
+                        
+                        let answer = await this.storeShippingRequest(openOrder, language, user[0])
+
+                        if(answer == true){
+
+                            let message = await this.successMessageService.findSuccessMessage(1,  language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                        }else{
+
+
+
+                        }
+             
+                        //await this.orderService.update(openOrder._id, "closed");
+
+                        //let message = await this.successMessageService.findSuccessMessage(1,  language.order)
+     
+                        //
+
+                    }
+
+                    else if(openQuestion.questionId.order == 20){
                         
                         if(!await this.validateEmail(messageBody.Body)){
 
@@ -585,11 +664,6 @@ export class ChatbotService {
 
         }else{
 
-            //const MessagingResponse = require('twillio').twiml.MessagingResponse;
-            //const twiml = new MessagingResponse()
-
-            //twiml.message(body)
-            console.log(phoneNumber)
             try{
                 await this.client.messages.create({
                     body: body, 
@@ -838,7 +912,7 @@ export class ChatbotService {
             return {"success": false, "order": 5}
         }
 
-        if(dateArray[0] < 2021){
+        if(dateArray[0] < today.getFullYear()){
     
             return {"success": false, "order": 6}
         }
@@ -848,7 +922,7 @@ export class ChatbotService {
             return {"success": false, "order": 5}
         }
 
-        if(dateArray[1] < today.getMonth() + 1){
+        if(dateArray[0] <= today.getFullYear() && dateArray[1] < today.getMonth() + 1){
 
             return {"success": false, "order": 6}
         }
@@ -863,7 +937,7 @@ export class ChatbotService {
             return {"success": false, "order": 5}
         }
 
-        if(dateArray[2] < today.getDate() - 1){
+        if(dateArray[0] <= today.getFullYear() && dateArray[1] <= today.getMonth() + 1 && dateArray[2] < today.getDate() - 1){
         
             return {"success": false, "order": 6}
         }
@@ -895,6 +969,40 @@ export class ChatbotService {
             return {"success": false, "order": 5}
         }
 
+        //return {"success": false, "order": 5}
+        return {"success": true}
+
+
+    }
+
+    async validateDateBothDates(departureDate, destinationDate){
+
+        let today = new Date();
+        let splitDeparture = departureDate.split(" ")
+        let splitDestination = destinationDate.split(" ")
+
+        let dateDepartureArray = splitDeparture[0].split("-")
+        let timeDepartureArray = splitDeparture[1].split(":")
+
+        let dateDestinationArray = splitDestination[0].split("-")
+        let timeDestinationArray = splitDestination[1].split(":")
+
+        if(dateDestinationArray[0] < dateDepartureArray[0]){
+    
+            return {"success": false, "order": 12}
+        }
+
+        if(dateDestinationArray[0] <= dateDepartureArray[0] && dateDestinationArray[1] < dateDepartureArray[1]){
+
+            return {"success": false, "order": 12}
+        }
+
+        if(dateDestinationArray[0] <= dateDepartureArray[0] && dateDestinationArray[1] <= dateDepartureArray[1] && dateDestinationArray[2] < dateDepartureArray[2]){
+        
+            return {"success": false, "order": 12}
+        }
+
+        
         return {"success": true}
 
 
@@ -953,7 +1061,7 @@ export class ChatbotService {
         }
     }
 
-    async createPayload(openOrder, language, user){
+    async storeShippingRequest(openOrder, language, user){
 
         let packageTitle = await this.getReply(openOrder._id, 3, language.order, user._id)
         let packageTitleReply = packageTitle.reply
@@ -976,47 +1084,86 @@ export class ChatbotService {
         let destinationDate = await this.getReply(openOrder._id, 10, language.order, user._id)
         let destinationDateReply = destinationDate.reply
 
-        let deliveryAddress = await this.getReply(openOrder._id, 11, language.order, user._id)
+        let deliveryAddress = await this.getReply(openOrder._id, 12, language.order, user._id)
         let deliveryAddressReply = deliveryAddress.reply
 
-        let packagePicture = await this.getReply(openOrder._id, 12, language.order, user._id)
-        let packagePictureReply = packagePicture.reply
+        let packagePicture = await this.getReply(openOrder._id, 13, language.order, user._id)
+        const packagePictureReply = packagePicture.reply
 
-        let clientEmail = await this.getReply(openOrder._id, 13, language.order, user._id)
+        let clientEmail = await this.getReply(openOrder._id, 14, language.order, user._id)
         let clientEmailReply = clientEmail.reply
 
-        let clientPhoneNumber = await this.getReply(openOrder._id, 14, language.order, user._id)
+        let clientPhoneNumber = await this.getReply(openOrder._id, 15, language.order, user._id)
         let clientPhoneNumberReply = clientPhoneNumber.reply
 
-        let clientFullName = await this.getReply(openOrder._id, 15, language.order, user._id)
+        let clientFullName = await this.getReply(openOrder._id, 16, language.order, user._id)
         let clientFullNameReply = clientFullName.reply
 
-        let clientCountry = await this.getReply(openOrder._id, 16, language.order, user._id)
+        let clientCountry = await this.getReply(openOrder._id, 17, language.order, user._id)
         let clientCountryReply = clientCountry.reply
 
-        let clientCity = await this.getReply(openOrder._id, 17, language.order, user._id)
+        let clientCity = await this.getReply(openOrder._id, 18, language.order, user._id)
         let clientCityReply = clientCity.reply
 
-        let payload = {
-            "email": "twilio@twilio.com",
-            "title": packageTitleReply, // Máximo 12 caracteres
-            "price": "100", // Una cadena con un valor mínimo de 30
-            "cityDeparture": departureCityReply, // Ciudad de salida, debe coincidir con “city” del listado de ciudades,
-            "cityDestination": destinationCityReply, // Ciudad de entrega, debe coincidir con “city” del listado de ciudades,
-            "countryDeparture": destinationCountryReply, // País de entrega, debe coincidir con “name” del listado de paises,
-            "countryDestination": destinationCountryReply, // País de entrega, debe coincidir con “name” del listado de paises,
-            "departureDate": departureDateReply, // fecha de salida del paquete
-            "arrivalDate": destinationDateReply, // fecha de llegada del paquete
-            "delivery": deliveryAddressReply, // Dirección del Lugar de entrega
-            "image": packagePictureReply, // Imagen en formato File
-            "email_client": clientEmailReply, // email del cliente
-            "phone_client": clientPhoneNumberReply, // teléfono celular del cliente
-            "fullName_client": clientFullNameReply, // Nombre completo del cliente
-            "country_client": clientCountryReply, // debe coincidir con “name” del listado de paises,
-            "city_client": clientCityReply
+        let paymentMethod = await this.getReply(openOrder._id, 19, language.order, user._id)
+        let paymentMethodReply = paymentMethod.reply
+
+        let dest = "./dist/images/"+uuidv4()+".png"
+
+        const writer = fs.createWriteStream(dest);
+
+        const response = await this.httpService.axiosRef({
+            url: packagePictureReply,
+            method: 'GET',
+            responseType: 'stream',
+        });
+
+        await response.data.pipe(writer);
+        
+        let dest2 = dest.replace(".", "").replace(/\//g, '\\');
+        let path = process.env.BASE_PATH+dest2
+
+        const file = await fs.readFileSync(path);
+
+        const form = new FormData();
+        form.append("email", "twilio-test@twilio.com")
+        form.append("title", packageTitleReply) 
+        form.append("cityDeparture", departureCityReply) 
+        form.append("cityDestination", destinationCityReply) 
+        form.append("countryDeparture", departureCountryReply)
+        form.append("countryDestination", destinationCountryReply) 
+        form.append("departureDate", departureDateReply)
+        form.append("arrivalDate", destinationDateReply)
+        form.append("delivery", deliveryAddressReply)
+        form.append("image", file, 'image.png')
+        form.append("email_client", clientEmailReply)
+        form.append("phone_client", clientPhoneNumberReply) 
+        form.append("fullName_client", clientFullNameReply) 
+        form.append("country_client", clientCountryReply) 
+        form.append("city_client", clientCityReply)
+        form.append("paymentMethod", paymentMethodReply)
+        
+        try{
+
+            let responseStore = await this.httpService.post(process.env.API_URL+"tw-createAd-test", form, {
+                headers: {
+                    ...form.getHeaders(),
+                }
+            }).toPromise()
+
+            if(responseStore.data.ok == true){
+                return true
+            }else{
+                return false
+            }
+            
+            
+
+        }catch(err){
+            
+            return false
         }
 
-        return payload
 
     }
 
@@ -1031,10 +1178,166 @@ export class ChatbotService {
 
     }
 
-    async storeShippingRequest(payload){
+    async getAddress(openOrder, language, user){
 
-        let response = await this.httpService.post(process.env.API_URL+"tw-createAd", payload).toPromise()
-        console.log(response)
+        let deliveryAddress = await this.getReply(openOrder._id, 11, language, user._id)
+        let address = deliveryAddress.reply
+
+        let newAddress = address.toLowerCase().replace(/á/g, 'a')
+        newAddress = newAddress.toLowerCase().replace(/é/g, 'e')
+        newAddress = newAddress.toLowerCase().replace(/í/g, 'i')
+        newAddress = newAddress.toLowerCase().replace(/ó/g, 'o')
+        newAddress = newAddress.toLowerCase().replace(/ú/g, 'u')
+
+        let response = await this.httpService.post(process.env.API_URL+"tw-searchAddressDelivery-test", {
+            "email": "twilio-test@twilio.com",
+            "address": newAddress
+        }).toPromise()
+
+        let addresses = response.data.resp.results
+
+        let finalText = ""
+        
+        for(let i = 0; i < addresses.length; i++){
+
+            let index = i + 1
+
+            finalText += index+"-"+addresses[i].formatted_address+"\n"
+
+        }
+
+        return finalText
+
+    }
+
+    async countAddress(openOrder, language, user){
+
+        let deliveryAddress = await this.getReply(openOrder._id, 11, language, user._id)
+        let address = deliveryAddress.reply
+
+        let newAddress = address.toLowerCase().replace(/á/g, 'a')
+        newAddress = newAddress.toLowerCase().replace(/é/g, 'e')
+        newAddress = newAddress.toLowerCase().replace(/í/g, 'i')
+        newAddress = newAddress.toLowerCase().replace(/ó/g, 'o')
+        newAddress = newAddress.toLowerCase().replace(/ú/g, 'u')
+
+        let response = await this.httpService.post(process.env.API_URL+"tw-searchAddressDelivery-test", {
+            "email": "twilio-test@twilio.com",
+            "address": newAddress
+        }).toPromise()
+
+        let addresses = response.data.resp.results
+
+        return addresses.length
+
+    }
+
+    async validateAddress(selectedAddress, openOrder, language, user){
+
+        let deliveryAddress = await this.getReply(openOrder._id, 11, language, user._id)
+        let address = deliveryAddress.reply
+
+        let newAddress = address.toLowerCase().replace(/á/g, 'a')
+        newAddress = newAddress.toLowerCase().replace(/é/g, 'e')
+        newAddress = newAddress.toLowerCase().replace(/í/g, 'i')
+        newAddress = newAddress.toLowerCase().replace(/ó/g, 'o')
+        newAddress = newAddress.toLowerCase().replace(/ú/g, 'u')
+
+        let response = await this.httpService.post(process.env.API_URL+"tw-searchAddressDelivery-test", {
+            "email": "twilio-test@twilio.com",
+            "address": newAddress
+        }).toPromise()
+
+        let addresses = response.data.resp.results
+        let finalAddress = ""
+
+        for(let i = 0; i < addresses.length; i++){
+
+            let index = i + 1
+
+            if(selectedAddress == index){
+
+                finalAddress = addresses[i].formatted_address
+
+            }
+
+        }
+
+        return finalAddress
+
+    }
+
+    async deleteAskedQuestion(orderId, questionOrder, languageOrder, userId){
+
+        let language = await this.languageService.findByOrder(languageOrder)
+        let question = await this.questionService.findByOrderAndLanguage(questionOrder, language._id)
+
+        let askedQuestion = await this.askedQuestionService.deleteAskedQuestion(userId, question[0]._id, orderId)
+
+        return askedQuestion
+
+    }
+
+    async downloadFile(url, dest){
+
+        const writer = fs.createWriteStream(dest);
+
+        const response = await this.httpService.axiosRef({
+            url: url,
+            method: 'GET',
+            responseType: 'stream',
+        });
+
+        await response.data.pipe(writer);
+        
+        let dest2 = dest.replace(".", "").replace(/\//g, '\\');
+        let path = process.env.BASE_PATH+dest2
+
+        const file = await fs.readFileSync(path);
+       
+        const form = new FormData();
+        form.append("email", "twilio-test@twilio.com")
+        form.append("title", "test") 
+        form.append("cityDeparture", "Cartagena") 
+        form.append("cityDestination", "Cartagena") 
+        form.append("countryDeparture", "Colombia")
+        form.append("countryDestination", "Colombia") 
+        form.append("departureDate", "2021-11-30 12:00")
+        form.append("arrivalDate", "2021-11-30 17:00")
+        form.append("delivery", "test-address")
+        form.append("image", file, 'image.png')
+        form.append("email_client", "rodriguezwillian95@gmail.com")
+        form.append("phone_client", "+584121081638") 
+        form.append("fullName_client", "willian") 
+        form.append("country_client", "Colombia") 
+        form.append("city_client", "Cartagena")
+        form.append("paymentMethod", "paypal")
+        
+        try{
+
+            let responseStore = await this.httpService.post(process.env.API_URL+"tw-createAd-test", form, {
+                headers: {
+                    ...form.getHeaders(),
+                }
+            }).toPromise()
+
+            console.log(responseStore.data.ok)
+
+        }catch(err){
+            console.log(err)
+        }
+        
+
+
+        
+        /*let payload = {
+            
+        }
+
+        await this.storeShippingRequest(payload)*/
+
+ 
+
     }
 
 

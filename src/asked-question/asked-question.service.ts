@@ -55,6 +55,10 @@ export class AskedQuestionService {
 
     }
 
-    
+    async deleteAskedQuestion(userId, questionId, orderId){
+
+        let askedQuestion = await this.model.findOne({userId: userId, orderId:orderId, questionId: questionId})
+        await askedQuestion.delete();
+    }
 
 }
