@@ -1301,7 +1301,9 @@ export class ChatbotService {
 
         }
         
-        
+        console.log(process.env.SYS_OS)
+        console.log(dest2)
+        console.log(path)
 
         const file = await fs.readFileSync(path);
        
