@@ -28,6 +28,8 @@ export class ChatbotService {
 
     async message(messageBody, phoneNumber) {
 
+        console.log(messageBody)
+
         try {
 
             let user = await this.userService.findUserByPhone(messageBody.From)
@@ -341,7 +343,7 @@ export class ChatbotService {
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, openOrder ? openOrder._id : null)
 
-                        //console.log(openOrder, language, user[0])
+                        console.log(openOrder, language, user[0])
 
                         await this.showQuestion(12, messageBody, phoneNumber)
                         let message = await this.getAddress(openOrder._id, language.order, user[0]._id)
@@ -381,31 +383,44 @@ export class ChatbotService {
                         let validation = await this.validateAddress(messageBody.Body, openOrder._id, language.order, user[0]._id)
                         
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, validation, openOrder ? openOrder._id : null)
-                        await this.showQuestion(13, messageBody, phoneNumber)
+                   
+                            await this.showQuestion(13, messageBody, phoneNumber)
+                        
 
                     }
 
                     else if(openQuestion.questionId.order == 13){
 
-                        if(!messageBody.MediaContentType0){
+                        if(phoneNumber.indexOf("whatsapp") > -1){
 
-                            let message = await this.errorMessageService.findErrorMessage(7, language.order)
-                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
-                            return 
-                        }   
+                            if(!messageBody.MediaContentType0){
 
-                        if(messageBody.MediaContentType0.indexOf("image") <= -1){
-
-                            let message = await this.errorMessageService.findErrorMessage(7, language.order)
-                            await this.sendMessage(message.message, messageBody.From,phoneNumber)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
-                            return
+                                let message = await this.errorMessageService.findErrorMessage(7, language.order)
+                                await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                                await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                                return 
+                            }   
+    
+                            if(messageBody.MediaContentType0.indexOf("image") <= -1){
+    
+                                let message = await this.errorMessageService.findErrorMessage(7, language.order)
+                                await this.sendMessage(message.message, messageBody.From,phoneNumber)
+                                await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                                return
+    
+                            }
 
                         }
 
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
-                        await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.MediaUrl0, openOrder ? openOrder._id : null)
+                        if(phoneNumber.indexOf("whatsapp") > -1){
+                            await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.MediaUrl0, openOrder ? openOrder._id : null)
+                        }else{
+                            await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, openOrder ? openOrder._id : null)
+                        }
+
+                        
+                        
                         await this.showQuestion(14, messageBody, phoneNumber)
 
                     }
@@ -810,6 +825,27 @@ export class ChatbotService {
         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
         
         await this.askedQuestionService.store(user[0]._id, body[0], openOrder ? openOrder._id : null)
+
+        if(phoneNumber.indexOf("whatsapp") > -1){
+
+        }
+
+        else if(order == 13){
+
+            let language = await this.languageService.findById(user[0].languageId._id)
+            if(language.language == "Español"){
+
+                await this.sendMessage("Describa el paquete", messageBody.From, phoneNumber)
+
+            }else{
+
+                await this.sendMessage("Describe the package", messageBody.From, phoneNumber)
+
+            }
+
+            return
+
+        }
         
         await this.sendMessage(this.textTransformation(body[0].question), messageBody.From, phoneNumber)
 
@@ -1256,31 +1292,46 @@ export class ChatbotService {
         let paymentMethod = await this.getReply(openOrder._id, 19, language.order, user._id)
         let paymentMethodReply = paymentMethod.reply
 
-        let dest = "./dist/images/"+uuidv4()+".png"
-
-        const writer = fs.createWriteStream(dest);
-
-        const response = await this.httpService.axiosRef({
-            url: packagePictureReply,
-            method: 'GET',
-            responseType: 'stream',
-        });
-
-        await response.data.pipe(writer);
-        
+        let file = null
         let path = ""
-        let dest2 = ""
-        if(process.env.SYS_OS == "windows"){
-            dest2 = dest.replace(".", "").replace(/\//g, '\\');
-            path = process.env.BASE_PATH+dest2
+        if(packagePictureReply.indexOf("api.twilio.com") > 0){
+
+            let dest = "./dist/images/"+uuidv4()+".png"
+
+            const writer = fs.createWriteStream(dest);
+
+            const response = await this.httpService.axiosRef({
+                url: packagePictureReply,
+                method: 'GET',
+                responseType: 'stream',
+            });
+
+            await response.data.pipe(writer);
+            
+            
+            let dest2 = ""
+            if(process.env.SYS_OS == "windows"){
+                dest2 = dest.replace(".", "").replace(/\//g, '\\');
+                path = process.env.BASE_PATH+dest2
+            }else{
+                dest2 = dest.replace(".", "")
+                path = process.env.BASE_PATH+dest2
+
+            }
+            
+            file = await fs.readFileSync(path);
+            
+
         }else{
-            dest2 = dest.replace(".", "")
-            path = process.env.BASE_PATH+dest2
 
+            if(process.env.SYS_OS == "windows"){
+                path = process.env.BASE_PATH+"\\dist\\images\\default.jpg"
+                file = await fs.readFileSync(path);
+            }else{
+                path = process.env.BASE_PATH+"/dist/images/default.jpg"
+                file = await fs.readFileSync(path);
+            }
         }
-        
-
-        const file = await fs.readFileSync(path);
 
         const form = new FormData();
         form.append("email", "twilio-test@twilio.com")
