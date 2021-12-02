@@ -25,7 +25,7 @@ export class ChatbotController {
   @Get("download")
   async download(){
 
-      await this.chatbotService.downloadFile("https://api.twilio.com/2010-04-01/Accounts/AC2b67f0037e860a7577909ea2242d467b/Messages/MM17339d0dfa225ce8dfd91deddd04712b/Media/MEdf541d4f874b806a1fc7f4b9c39b0fb1", "./dist/images/"+uuidv4()+".png")
+      //await this.chatbotService.downloadFile()
 
   }
 
