@@ -441,7 +441,7 @@ export class ChatbotService {
 
                     else if(openQuestion.questionId.order == 14){
                         
-                        if(!await this.validateEmail(messageBody.Body)){
+                        if(!await this.validateEmail(messageBody.Body.replace("\\u000", "@"))){
 
                             let message = await this.errorMessageService.findErrorMessage(8, language.order)
                             await this.sendMessage(message.message, messageBody.From, phoneNumber)
@@ -451,7 +451,7 @@ export class ChatbotService {
                         }
 
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
-                        await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body.toLowerCase(), openOrder ? openOrder._id : null)
+                        await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body.toLowerCase().replace("\\u000", "@"), openOrder ? openOrder._id : null)
                         await this.showQuestion(15, messageBody, phoneNumber)
 
                     }
