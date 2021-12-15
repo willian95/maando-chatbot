@@ -28,7 +28,7 @@ export class ChatbotService {
 
     async message(messageBody, phoneNumber) {
 
-        console.log(messageBody)
+        console.log(JSON.parse(messageBody.Body))
 
         try {
 
@@ -441,7 +441,7 @@ export class ChatbotService {
 
                     else if(openQuestion.questionId.order == 14){
                         
-                        console.log(messageBody.Body)
+                        
 
                         if(!await this.validateEmail(messageBody.Body.replace("\\u0000", "@"))){
 
