@@ -25,7 +25,7 @@ export class ChatbotController {
   @Get("download")
   async download(){
 
-      //await this.chatbotService.downloadFile()
+    await this.chatbotService.getPackages("rodriguezwillian95@gmail.com", 1);
 
   }
 

@@ -115,6 +115,14 @@ export class ChatbotService {
                     //titulo del paquete
                     else if(openQuestion.questionId.order == 3){
 
+                        if(messageBody.Body.length > 12){
+
+                            let message = await this.errorMessageService.findErrorMessage(16, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                            return
+                        }
+
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, openOrder ? openOrder._id : null)
                         
@@ -343,11 +351,9 @@ export class ChatbotService {
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                         await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body, openOrder ? openOrder._id : null)
 
-                        console.log(openOrder, language, user[0])
-
-                        await this.showQuestion(12, messageBody, phoneNumber)
-                        let message = await this.getAddress(openOrder._id, language.order, user[0]._id)
-                        await this.sendMessage(message, messageBody.From, phoneNumber)
+                        await this.showQuestion(13, messageBody, phoneNumber)
+                        //let message = await this.getAddress(openOrder._id, language.order, user[0]._id)
+                        //await this.sendMessage(message, messageBody.From, phoneNumber)
                         
 
                     }
@@ -361,14 +367,22 @@ export class ChatbotService {
                             
                             let message = await this.errorMessageService.findErrorMessage(1, language.order)
                             await this.sendMessage(message.message, messageBody.From, phoneNumber)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
-                            return
+                            await this.sendMessage(this.textTransformation(openQuestion.questionId.question), messageBody.From, phoneNumber)
+                            
+                            let messageOptions = await this.getAddress(openOrder._id, language.order, user[0]._id)
+                            await this.sendMessage(messageOptions, messageBody.From, phoneNumber)
+                            
+                             return
                         }
 
                         else if(isInteger < 0 || isInteger > await this.countAddress(openOrder._id, language.order, user[0]._id)){ //cambiar en caso de añadir otra opción al menu
                             let message = await this.errorMessageService.findErrorMessage(2, language.order)
                             await this.sendMessage(message.message, messageBody.From, phoneNumber)
-                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                            await this.sendMessage(this.textTransformation(openQuestion.questionId.question), messageBody.From, phoneNumber)
+
+                            let messageOptions = await this.getAddress(openOrder._id, language.order, user[0]._id)
+                            await this.sendMessage(messageOptions, messageBody.From, phoneNumber)
+
                             return
                         }
 
@@ -854,8 +868,8 @@ export class ChatbotService {
     async validateCity(city, userId, questionId, openOrderId){
 
         let askedQuestion = await this.askedQuestionService.getQuestionAsked(userId, questionId, openOrderId)
-        let response = await this.httpService.get(process.env.API_URL+"getAiports").toPromise()
-        let countries = response.data.contriesOrigin
+        let response = await this.httpService.get(process.env.API_URL+"getAiportsTwilio").toPromise()
+        let countries = response.data.contriesOriginTwilio
         let found = false
         let foundAt = 0
         let cities = []
@@ -882,7 +896,7 @@ export class ChatbotService {
 
         if(found == true){
 
-            return {city: cities[foundAt].city, "success": true}
+            return {city: cities[foundAt].city+" "+cities[foundAt].aiport, "success": true}
 
         }else{
             return {"success": false}
@@ -892,8 +906,8 @@ export class ChatbotService {
 
     async validateCountry(country){
 
-        let response = await this.httpService.get(process.env.API_URL+"getAiports").toPromise()
-        let countries = response.data.contriesOrigin
+        let response = await this.httpService.get(process.env.API_URL+"getAiportsTwilio").toPromise()
+        let countries = response.data.contriesOriginTwilio
         let found = false
         let foundAt = 0
         
@@ -920,8 +934,8 @@ export class ChatbotService {
 
     async countAvailableCountries(){
 
-        let response = await this.httpService.get(process.env.API_URL+"getAiports").toPromise()
-        let countries = response.data.contriesOrigin
+        let response = await this.httpService.get(process.env.API_URL+"getAiportsTwilio").toPromise()
+        let countries = response.data.contriesOriginTwilio
 
         return countries.length
 
@@ -930,8 +944,8 @@ export class ChatbotService {
     async countAvailableCity(userId, questionId, openOrderId){
 
         let askedQuestion = await this.askedQuestionService.getQuestionAsked(userId, questionId, openOrderId)
-        let response = await this.httpService.get(process.env.API_URL+"getAiports").toPromise()
-        let countries = response.data.contriesOrigin
+        let response = await this.httpService.get(process.env.API_URL+"getAiportsTwilio").toPromise()
+        let countries = response.data.contriesOriginTwilio
         let cities = []
 
         for(let i = 0; i < countries.length; i++){
@@ -951,8 +965,8 @@ export class ChatbotService {
 
     async getAvailableCountries(){
 
-        let response = await this.httpService.get(process.env.API_URL+"getAiports").toPromise()
-        let countries = response.data.contriesOrigin
+        let response = await this.httpService.get(process.env.API_URL+"getAiportsTwilio").toPromise()
+        let countries = response.data.contriesOriginTwilio
         let finalText = ""
         
         for(let i = 0; i < countries.length; i++){
@@ -971,8 +985,8 @@ export class ChatbotService {
     async getAvailableCities(userId, questionId, openOrderId){
 
         let askedQuestion = await this.askedQuestionService.getQuestionAsked(userId, questionId, openOrderId)
-        let response = await this.httpService.get(process.env.API_URL+"getAiports").toPromise()
-        let countries = response.data.contriesOrigin
+        let response = await this.httpService.get(process.env.API_URL+"getAiportsTwilio").toPromise()
+        let countries = response.data.contriesOriginTwilio
         let finalText = ""
         let cities = []
         
@@ -985,7 +999,7 @@ export class ChatbotService {
 
                     let index = j + 1
 
-                    finalText += index+"-"+cities[j].city + "\n"
+                    finalText += index+"-"+cities[j].city +" "+cities[j].aiport+ "\n"
 
                 }
 
@@ -1162,6 +1176,8 @@ export class ChatbotService {
             let packages = response.data.adsBD
             let finalText = ""
 
+            console.log(packages)
+
             if(packages.length > 0){
 
                 
@@ -1170,15 +1186,34 @@ export class ChatbotService {
                     let index = i + 1
 
                     let language = await this.languageService.findByOrder(languageOrder)
+
+                    let arrivalDate = packages[i].arrivalDate
+                    let arrivalDateToShow = new Date(arrivalDate * 1);
+                    let arrivalYear = arrivalDateToShow.getFullYear()
+                    let arrivalMonth = arrivalDateToShow.getMonth()+1
+                    let arrivalDay = arrivalDateToShow.getDate()
+
+                    let departureDate = packages[i].departureDate
+                    let departureDateToShow = new Date(arrivalDate * 1);
+                    let departureYear = departureDateToShow.getFullYear()
+                    let departureMonth = departureDateToShow.getMonth()+1
+                    let departureDay = departureDateToShow.getDate()
+
                     if(language.language == "Español"){
-                        finalText += index+"-"+packages[i].title+"\n País de salida: "+packages[i].countryDeparture+"\n Ciudad de salida: "+packages[i].cityDeparture+"\n País de destino: "+packages[i].country+"\n Ciudad de destino: "+packages[i].city+"\n Dirección: "+packages[i].delivery+"\n\n "
+                        finalText += index+"-"+packages[i].title+"\n País de salida: "+packages[i].countryDeparture+"\n Ciudad de salida: "+packages[i].cityDeparture+"\n País de destino: "+packages[i].country+"\n Ciudad de destino: "+packages[i].city+"\n Dirección: "+packages[i].delivery+"\n Fecha de salida:"+departureYear+"-"+departureMonth+"-"+departureDay+"\n"+"Fecha de llegada:"+arrivalYear+"-"+arrivalMonth+"-"+arrivalDay+"\n\n "
                     }
                     else{
-                        finalText += index+"-"+packages[i].title+"\n Departure country: "+packages[i].countryDeparture+"\n Departure city: "+packages[i].cityDeparture+"\n Destination country: "+packages[i].country+"\n Destination city: "+packages[i].city+"\n Address: "+packages[i].delivery+"\n\n "
+                        finalText += index+"-"+packages[i].title+"\n Departure country: "+packages[i].countryDeparture+"\n Departure city: "+packages[i].cityDeparture+"\n Destination country: "+packages[i].country+"\n Destination city: "+packages[i].city+"\n Address: "+packages[i].delivery+"\n Departure date:"+departureYear+"-"+departureMonth+"-"+departureDay+"\n"+"Arrival date:"+arrivalYear+"-"+arrivalMonth+"-"+arrivalDay+"\n\n "
                     }
                     
 
                 }
+
+            }else{
+
+                //finalText = await this.errorMessageService.findErrorMessage(11, languageOrder)
+
+
 
             }
 
@@ -1268,7 +1303,7 @@ export class ChatbotService {
         let destinationDate = await this.getReply(openOrder._id, 10, language.order, user._id)
         let destinationDateReply = destinationDate.reply
 
-        let deliveryAddress = await this.getReply(openOrder._id, 12, language.order, user._id)
+        let deliveryAddress = await this.getReply(openOrder._id, 11, language.order, user._id)
         let deliveryAddressReply = deliveryAddress.reply
 
         let packagePicture = await this.getReply(openOrder._id, 13, language.order, user._id)
@@ -1359,6 +1394,8 @@ export class ChatbotService {
                 }
             }).toPromise()
 
+            
+
             if(responseStore.data.ok == true){
                 return {success: true}
             }else{
@@ -1368,7 +1405,7 @@ export class ChatbotService {
             
 
         }catch(err){
-            
+            console.log(err)
             return {success: false}
         }
 
