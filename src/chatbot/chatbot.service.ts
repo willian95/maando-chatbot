@@ -441,6 +441,8 @@ export class ChatbotService {
 
                     else if(openQuestion.questionId.order == 14){
                         
+                        console.log(messageBody.Body.replace("\\u000", "@"))
+
                         if(!await this.validateEmail(messageBody.Body.replace("\\u000", "@"))){
 
                             let message = await this.errorMessageService.findErrorMessage(8, language.order)
