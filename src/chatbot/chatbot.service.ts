@@ -28,8 +28,6 @@ export class ChatbotService {
 
     async message(messageBody, phoneNumber) {
 
-        console.log(JSON.parse(messageBody.Body))
-
         try {
 
             let user = await this.userService.findUserByPhone(messageBody.From)
@@ -441,9 +439,25 @@ export class ChatbotService {
 
                     else if(openQuestion.questionId.order == 14){
                         
+                        let splittedMessage = messageBody.Body.split(" ")   
+                        let emailToEvaluate = ""
                         
+                        if(splittedMessage.length > 2){
+                            let message = await this.errorMessageService.findErrorMessage(8, language.order)
+                            await this.sendMessage(message.message, messageBody.From, phoneNumber)
+                            await this.sendMessage(openQuestion.questionId.question, messageBody.From, phoneNumber)
+                            return
+                        }
 
-                        if(!await this.validateEmail(messageBody.Body.replace("\\u0000", "@"))){
+                        else if(splittedMessage.length == 2){
+
+                            emailToEvaluate = splittedMessage[0]+"@"+splittedMessage[1].toString().replace("@", "")
+
+                        }else if(splittedMessage.length == 1){
+                            emailToEvaluate = messageBody.Body
+                        }
+
+                        if(!await this.validateEmail(emailToEvaluate)){
 
                             let message = await this.errorMessageService.findErrorMessage(8, language.order)
                             await this.sendMessage(message.message, messageBody.From, phoneNumber)
@@ -453,7 +467,7 @@ export class ChatbotService {
                         }
 
                         let openOrder = await this.orderService.findOpenOrder(user[0]._id)
-                        await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, messageBody.Body.toLowerCase().replace("\\u000", "@"), openOrder ? openOrder._id : null)
+                        await this.askedQuestionService.updateOpenQuestionWithReply(openQuestion._id, emailToEvaluate.toLowerCase(), openOrder ? openOrder._id : null)
                         await this.showQuestion(15, messageBody, phoneNumber)
 
                     }
@@ -842,7 +856,7 @@ export class ChatbotService {
         
         await this.askedQuestionService.store(user[0]._id, body[0], openOrder ? openOrder._id : null)
 
-        if(phoneNumber.indexOf("whatsapp") > -1){
+        if(phoneNumber.indexOf("whatsapp") > -1){ //si es whatsapp entra aquì
 
         }
 
@@ -856,6 +870,23 @@ export class ChatbotService {
             }else{
 
                 await this.sendMessage("Describe the package", messageBody.From, phoneNumber)
+
+            }
+
+            return
+
+        }
+
+        else if(order == 14){
+
+            let language = await this.languageService.findById(user[0].languageId._id)
+            if(language.language == "Español"){
+
+                await this.sendMessage(this.textTransformation(body[0].question+"| Deje un espacio antes del arroba, ejemplo: test @gmail.com"), messageBody.From, phoneNumber)
+
+            }else{
+
+                await this.sendMessage("Describe the package"+"| leave a blank space before @, e.g: test @gmail.com", messageBody.From, phoneNumber)
 
             }
 
