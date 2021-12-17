@@ -457,6 +457,8 @@ export class ChatbotService {
                             emailToEvaluate = messageBody.Body
                         }
 
+                        console.log("emailtoevaluate", emailToEvaluate)
+
                         if(!await this.validateEmail(emailToEvaluate)){
 
                             let message = await this.errorMessageService.findErrorMessage(8, language.order)
