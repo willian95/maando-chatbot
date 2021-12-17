@@ -28,6 +28,8 @@ export class ChatbotService {
 
     async message(messageBody, phoneNumber) {
 
+        console.log(messageBody)
+
         try {
 
             let user = await this.userService.findUserByPhone(messageBody.From)
