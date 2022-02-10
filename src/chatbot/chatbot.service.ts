@@ -1366,6 +1366,10 @@ export class ChatbotService {
 
         let file = null
         let path = ""
+
+        console.log("SYS_OS", process.env.SYS_OS)
+        console.log("SYS_OS", process.env.BASE_PATH)
+
         if(packagePictureReply.indexOf("api.twilio.com") > 0){
 
             let dest = "./dist/images/"+uuidv4()+".png"
@@ -1398,8 +1402,7 @@ export class ChatbotService {
 
             if(process.env.SYS_OS == "windows"){
                 path = process.env.BASE_PATH+"\\dist\\images\\default.jpg"
-                console.log("path", path)
-                console.log("SYS_OS", process.env.SYS_OS)
+                
 
                 file = await fs.readFileSync(path);
             }else{
