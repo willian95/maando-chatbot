@@ -1398,15 +1398,19 @@ export class ChatbotService {
 
             if(process.env.SYS_OS == "windows"){
                 path = process.env.BASE_PATH+"\\dist\\images\\default.jpg"
+                console.log("path", path)
+                console.log("SYS_OS", process.env.SYS_OS)
+
                 file = await fs.readFileSync(path);
             }else{
                 path = process.env.BASE_PATH+"/dist/images/default.jpg"
+                console.log("path", path)
+                console.log("SYS_OS", process.env.SYS_OS)
                 file = await fs.readFileSync(path);
             }
         }
 
-        console.log("path", path)
-        console.log("SYS_OS", process.env.SYS_OS)
+        
 
         const form = new FormData();
         form.append("email", "twilio-test@twilio.com")
