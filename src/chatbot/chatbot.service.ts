@@ -43,9 +43,9 @@ export class ChatbotService {
                 let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                 let openQuestion = await this.askedQuestionService.userHaveOpenQuestion(user[0]._id, openOrder ? openOrder._id : null)
 
-                console.log("message", messageBody)
+                /*console.log("message", messageBody)
                 console.log("openOrder", openOrder)
-                console.log("openQuestion", openQuestion)
+                console.log("openQuestion", openQuestion)*/
 
                 if(openQuestion){
 
@@ -1404,6 +1404,9 @@ export class ChatbotService {
                 file = await fs.readFileSync(path);
             }
         }
+
+        console.log("path", path)
+        console.log("SYS_OS", process.env.SYS_OS)
 
         const form = new FormData();
         form.append("email", "twilio-test@twilio.com")
