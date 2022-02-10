@@ -43,7 +43,9 @@ export class ChatbotService {
                 let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                 let openQuestion = await this.askedQuestionService.userHaveOpenQuestion(user[0]._id, openOrder ? openOrder._id : null)
 
-                console.log(messageBody, openOrder, openQuestion)
+                console.log("message", messageBody)
+                console.log("openOrder", openOrder)
+                console.log("openQuestion", openQuestion)
 
                 if(openQuestion){
 
