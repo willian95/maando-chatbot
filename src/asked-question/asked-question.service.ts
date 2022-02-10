@@ -35,6 +35,8 @@ export class AskedQuestionService {
 
     async updateOpenQuestionWithReply(questionId, reply, orderId){
 
+        
+
         let question = await this.model.findOne({_id: questionId, orderId: orderId})
         question.reply = reply
         question.updatedAt = new Date()

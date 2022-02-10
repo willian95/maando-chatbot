@@ -28,8 +28,6 @@ export class ChatbotService {
 
     async message(messageBody, phoneNumber) {
 
-        console.log(messageBody)
-
         try {
 
             let user = await this.userService.findUserByPhone(messageBody.From)
@@ -44,6 +42,8 @@ export class ChatbotService {
                 language = await this.languageService.findById(user[0].languageId)
                 let openOrder = await this.orderService.findOpenOrder(user[0]._id)
                 let openQuestion = await this.askedQuestionService.userHaveOpenQuestion(user[0]._id, openOrder ? openOrder._id : null)
+
+                console.log(messageBody, openOrder, openQuestion)
 
                 if(openQuestion){
 
@@ -458,8 +458,6 @@ export class ChatbotService {
                         }else if(splittedMessage.length == 1){
                             emailToEvaluate = messageBody.Body
                         }
-
-                        console.log("emailtoevaluate", emailToEvaluate)
 
                         if(!await this.validateEmail(emailToEvaluate)){
 
