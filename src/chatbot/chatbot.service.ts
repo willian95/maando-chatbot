@@ -819,6 +819,12 @@ export class ChatbotService {
     async askForLanguage(messageBody, language, phoneNumber){
         
         let storedUser = await this.userService.store(messageBody.From, language._id)
+
+        if(storedUser){
+
+            await this.sendMessage("Hi sir, were we able to solve the issue that you were facing?", messageBody.From, phoneNumber)
+
+        }
                 
         let body = await this.questionService.findByOrderAndLanguage(1, language._id)
         await this.askedQuestionService.store(storedUser._id, body[0], null)
