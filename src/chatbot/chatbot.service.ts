@@ -774,11 +774,13 @@ export class ChatbotService {
         if(phoneNumber.indexOf("whatsapp") > -1){
 
             try{
-                await this.client.messages.create({
+                let message = await this.client.messages.create({
                     body: body, 
                     from: phoneNumber,       
                     to: to
                 });
+
+                console.log(message)
             }catch (e) {
                 console.log(e)
             }
