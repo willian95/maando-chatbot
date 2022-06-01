@@ -771,6 +771,8 @@ export class ChatbotService {
 
     async sendMessage(body, to, phoneNumber){
         
+        console.log(phoneNumber)
+
         if(phoneNumber.indexOf("whatsapp") > -1){
 
             try{
