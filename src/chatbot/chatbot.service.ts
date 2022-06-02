@@ -1425,7 +1425,7 @@ export class ChatbotService {
         
 
         const form = new FormData();
-        form.append("email", "twilio-test@twilio.com")
+        form.append("email", "twilio@twilio.com")
         form.append("title", packageTitleReply) 
         form.append("cityDeparture", departureCityReply) 
         form.append("cityDestination", destinationCityReply) 
