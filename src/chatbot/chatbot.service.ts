@@ -1272,8 +1272,8 @@ export class ChatbotService {
 
     async countPackages(email){
 
-        let response = await this.httpService.post(process.env.API_URL+"tw-mysAd-test", {
-            "email": "twilio-test@twilio.com", 
+        let response = await this.httpService.post(process.env.API_URL+"tw-mysAd", {
+            "email": "twilio@twilio.com", 
             "email_client": email
         }).toPromise()
         let packages = response.data.adsBD
@@ -1286,8 +1286,8 @@ export class ChatbotService {
 
         try{
 
-            let response = await this.httpService.post(process.env.API_URL+"tw-mysAd-test", {
-                "email": "twilio-test@twilio.com", 
+            let response = await this.httpService.post(process.env.API_URL+"tw-mysAd", {
+                "email": "twilio@twilio.com", 
                 "email_client": email
             }).toPromise()
             let packages = response.data.adsBD
@@ -1307,8 +1307,8 @@ export class ChatbotService {
 
                 }
 
-                let response = await this.httpService.post(process.env.API_URL+"tw-deleteAd-test", {
-                    "email": "twilio-test@twilio.com", 
+                let response = await this.httpService.post(process.env.API_URL+"tw-deleteAd", {
+                    "email": "twilio@twilio.com", 
                     "email_client": email,
                     "_idAd": selectedPackage._id
                 }).toPromise()
