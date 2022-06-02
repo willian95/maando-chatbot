@@ -771,7 +771,6 @@ export class ChatbotService {
 
     async sendMessage(body, to, phoneNumber){
         
-        console.log(phoneNumber)
 
         if(phoneNumber.indexOf("whatsapp") > -1){
 
@@ -1445,7 +1444,7 @@ export class ChatbotService {
         
         try{
 
-            let responseStore = await this.httpService.post(process.env.API_URL+"tw-createAd-test", form, {
+            let responseStore = await this.httpService.post(process.env.API_URL+"tw-createAd", form, {
                 headers: {
                     ...form.getHeaders(),
                 }
