@@ -1216,7 +1216,7 @@ export class ChatbotService {
         try{
 
             let response = await this.httpService.post(process.env.API_URL+"tw-mysAd", {
-                "email": "twilio-test@twilio.com", 
+                "email": "twilio@twilio.com", 
                 "email_client": email
             }).toPromise()
             let packages = response.data.adsBD
